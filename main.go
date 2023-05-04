@@ -26,6 +26,10 @@ type PersonalCopy struct {
 	ContentFormat string `json:"contentFormat"`
 }
 
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
 var books []Book
 
 func getBooks(w http.ResponseWriter, r *http.Request) {
@@ -36,13 +40,25 @@ func getBooks(w http.ResponseWriter, r *http.Request) {
 func getBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
+	found := false
 
 	for _, book := range books {
 		if book.ID == params["id"] {
+			found = true
 			json.NewEncoder(w).Encode(book)
 			return
 		}
 	}
+
+	if !found {
+		handleNotFoundError(w)
+	}
+}
+
+func handleNotFoundError(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNotFound)
+	errorResponse := ErrorResponse{Message: "No books found with that ID"}
+	json.NewEncoder(w).Encode(errorResponse)
 }
 
 func deleteBook(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +80,7 @@ func createBook(w http.ResponseWriter, r *http.Request) {
 
 	var book Book
 	_ = json.NewDecoder(r.Body).Decode(&book)
-	book.ID = strconv.Itoa(rand.Intn(1000000000))
+	book.ID = generateID()
 	books = append(books, book)
 
 	json.NewEncoder(w).Encode(book)
@@ -81,10 +97,15 @@ func updateBook(w http.ResponseWriter, r *http.Request) {
 
 			var book Book
 			_ = json.NewDecoder(r.Body).Decode(&book)
+			book.ID = generateID()
 			books = append(books, book)
 		}
 	}
 	json.NewEncoder(w).Encode(books)
+}
+
+func generateID() string {
+	return strconv.Itoa(rand.Intn(1000000000))
 }
 
 func main() {
@@ -92,11 +113,11 @@ func main() {
 	r := mux.NewRouter()
 
 	// create sample book records
-	books = append(books, Book{ID: "1", Title: "Dune", Author: "Frank Herbert", Isbn: "9780399128967", Year: 1965, PersonalCopy: &PersonalCopy{ReadStatus: true, ContentFormat: "Kindle"}})
+	books = append(books, Book{ID: generateID(), Title: "Dune", Author: "Frank Herbert", Isbn: "9780399128967", Year: 1965, PersonalCopy: &PersonalCopy{ReadStatus: true, ContentFormat: "Kindle"}})
 
-	books = append(books, Book{ID: "2", Title: "The Three-Body Problem", Author: "Liu Cixin", Isbn: "9780765377067", Year: 2014, PersonalCopy: &PersonalCopy{ReadStatus: false, ContentFormat: "Kindle"}})
+	books = append(books, Book{ID: generateID(), Title: "The Three-Body Problem", Author: "Liu Cixin", Isbn: "9780765377067", Year: 2014, PersonalCopy: &PersonalCopy{ReadStatus: false, ContentFormat: "Kindle"}})
 
-	books = append(books, Book{ID: "3", Title: "The Name of the Wind", Author: "Patrick Rothfuss", Isbn: "9780756404079", Year: 2008, PersonalCopy: &PersonalCopy{ReadStatus: true, ContentFormat: "Paperback"}})
+	books = append(books, Book{ID: generateID(), Title: "The Name of the Wind", Author: "Patrick Rothfuss", Isbn: "9780756404079", Year: 2008, PersonalCopy: &PersonalCopy{ReadStatus: true, ContentFormat: "Paperback"}})
 
 	// GET ALL
 	r.HandleFunc("/books", getBooks).Methods("GET")
