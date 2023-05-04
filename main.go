@@ -51,13 +51,13 @@ func getBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !found {
-		handleNotFoundError(w)
+		handleError(w, http.StatusNotFound, "No results found with ID")
 	}
 }
 
-func handleNotFoundError(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusNotFound)
-	errorResponse := ErrorResponse{Message: "No books found with that ID"}
+func handleError(w http.ResponseWriter, statusCode int, errorMessage string) {
+	w.WriteHeader(statusCode)
+	errorResponse := ErrorResponse{Message: errorMessage}
 	json.NewEncoder(w).Encode(errorResponse)
 }
 
@@ -89,19 +89,26 @@ func createBook(w http.ResponseWriter, r *http.Request) {
 func updateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
+	found := false
 
 	// approach -> delete the original record, append new record at the end of slice
 	for index, book := range books {
 		if book.ID == params["id"] {
+			found = true
 			books = append(books[:index], books[index+1:]...)
 
 			var book Book
 			_ = json.NewDecoder(r.Body).Decode(&book)
 			book.ID = generateID()
 			books = append(books, book)
+			json.NewEncoder(w).Encode(books)
+			return
 		}
 	}
-	json.NewEncoder(w).Encode(books)
+
+	if !found {
+		handleError(w, http.StatusNotFound, "No results found with ID")
+	}
 }
 
 func generateID() string {
