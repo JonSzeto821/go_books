@@ -55,6 +55,7 @@ func getBook(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// TODO move to a utils package
 func handleError(w http.ResponseWriter, statusCode int, errorMessage string) {
 	w.WriteHeader(statusCode)
 	errorResponse := ErrorResponse{Message: errorMessage}
@@ -111,6 +112,7 @@ func updateBook(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// TODO move to a utils package
 func generateID() string {
 	return strconv.Itoa(rand.Intn(1000000000))
 }
@@ -119,7 +121,7 @@ func main() {
 	//instantiate a new router
 	r := mux.NewRouter()
 
-	// create sample book records
+	// create sample book records //TODO move sample data to standalone file and import back in
 	books = append(books, Book{ID: generateID(), Title: "Dune", Author: "Frank Herbert", Isbn: "9780399128967", Year: 1965, PersonalCopy: &PersonalCopy{ReadStatus: true, ContentFormat: "Kindle"}})
 
 	books = append(books, Book{ID: generateID(), Title: "The Three-Body Problem", Author: "Liu Cixin", Isbn: "9780765377067", Year: 2014, PersonalCopy: &PersonalCopy{ReadStatus: false, ContentFormat: "Kindle"}})
